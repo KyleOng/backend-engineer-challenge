@@ -14,8 +14,13 @@
     expected_answer = "grant me the s3r3nity to accept the things i cannot change the c0urage to change the things i can and the w1sd0m to know the difference"
 
     def sanitize_paragraph(paragraph)
-      #Convert to lower case => Removes new line => Removes white spaces that are >2 => Removes special characters
-      paragraph.downcase.gsub("\n", '').gsub("  ", '').gsub(/[^\w\s]/, '')
+      # # Convert to lower case => Removes new line => Removes white spaces that are >2 => Removes special characters
+      # paragraph.downcase.gsub("\n", '').gsub("  ", '').gsub(/[^\w\s]/, '')
+
+      # Downcase the paragraph and remove characters that match regular expression below:
+      # [^0-9a-z ] => non lower-case alphanumeric space
+      # [ \t]{2,} => more than two spaces
+      paragraph.downcase.gsub(/[^0-9a-z ]|[ \t]{2,}/i, '')
     end
     
     puts "Challenge 1 completed: #{sanitize_paragraph(paragraph) == expected_answer}"
@@ -39,14 +44,19 @@
 
     $country = "MALAYSIA"
     def get_state(_address)
-      #Split by ", " to get the last values which are mostly the states => get the first word 
-      state = _address.split(", ")[-1].split(" ")[0]
-      #check if last value is the country
-        if state == $country
-          #get the value before the country which is the state
-          state = _address.split(", ")[-2].split(" ")[0]
-        end
-      return state.upcase
+      # #Split by ", " to get the last values which are mostly the states => get the first word 
+      # state = _address.split(", ")[-1].split(" ")[0]
+      # #check if last value is the country
+      #   if state == $country
+      #     #get the value before the country which is the state
+      #     state = _address.split(", ")[-2].split(" ")[0]
+      #   end
+      # return state.upcase
+
+      # Split by ", " to get the last 2 elements (mostly contains area and state or state and country) => Upcase and return only the first word of the last 2 elements
+      # Return 1st element if 2nd element is country else 2nd element
+      lastTwo = _address.split(", ").last(2).map{|w| w.split(" ")[0].upcase}
+      return lastTwo[1] == $country ? lastTwo[0] : lastTwo[1]
     end
 
     # passing validation
@@ -68,14 +78,37 @@
     end
     
     def join_coordinates(coordinates) 
-      #The smallest array will contains integer only so return Join
-      return coordinates.join(' ') if coordinates.all? {|i| i.is_a?(Integer) }
-      arr = []
-      #Run each on all of the arrays until the arrays passed in is an array with integer values
-      coordinates.each do |index|
-        arr.append(join_coordinates(index))
+      # #The smallest array will contains integer only so return Join
+      # return coordinates.join(' ') if coordinates.all? {|i| i.is_a?(Integer) }
+      # arr = []
+      # #Run each on all of the arrays until the arrays passed in is an array with integer values
+      # coordinates.each do |index|
+      #   arr.append(join_coordinates(index))
+      # end
+      # return "(#{arr.join(', ')})"
+      
+      # 3 recursive steps:
+      # the `coordinate_pair` variable contains multiple polygon groups and
+      # each polygon groups contains multiple polygon and
+      # each polygon contains list of coordinates pair
+      def join_polygon(polygon)
+        if polygon.length == 1
+          return "#{polygon.join(" ")}"
+        end
+        return "#{polygon[0].join(" ")}, #{join_polygon(polygon[1...])}"
       end
-      return "(#{arr.join(', ')})"
+
+      def join_groups(groups)
+        if groups.length == 1
+          return "(#{join_polygon(groups[0])})"
+        end
+        return "(#{join_polygon(groups[0])}), #{join_groups(groups[1...])}"
+      end
+
+      if coordinates.length == 1
+        return "(#{join_groups(coordinates[0])})"
+      end
+      return "((#{join_groups(coordinates[0])}), #{join_coordinates(coordinates[1...])})"      
     end
     # passing validation
     puts "Challenge 3 completed: #{coord_to_wkt(coordinate_pair) == expected_answer}"
@@ -89,10 +122,24 @@
     Bonus points for the elegant recursive solution!'
     
     def is_palindrome?(word)
-      #Return false if first and last characters do not match
-      return false if word[0] != word[-1]
-      #If the length is > 3 => Run is_palindrome? again with the first and last character cut out of word
-      is_palindrome?(word[1...-2]) if (word.length > 3) 
+      # #Return false if first and last characters do not match
+      # return false if word[0] != word[-1]
+      # #If the length is > 3 => Run is_palindrome? again with the first and last character cut out of word
+      # is_palindrome?(word[1...-2]) if (word.length > 3) 
+      # return true
+
+      # two pointer solution: 
+      # move left and right pointer if both character is the same else break and return false
+      # return true if loop is completed
+      i = 0
+      j = word.length - 1
+      while i < j
+        if word[i] != word[j] 
+          return false
+        end
+        i += 1
+        j -= 1
+      end
       return true
     end
 
